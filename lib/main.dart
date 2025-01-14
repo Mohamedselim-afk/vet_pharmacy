@@ -1,19 +1,20 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter/cupertino.dart';
-import 'screens/home_screen.dart';
-import 'services/database_helper.dart';
-import 'services/notifications_service.dart';
+import 'app/routes/app_pages.dart';
+import 'app/data/services/database_service.dart';
+import 'app/data/services/notifications_service.dart';
+import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تهيئة قاعدة البيانات
-  await DatabaseHelper.instance.initializeDatabase();
-
-  // تهيئة نظام الإشعارات
-  final notificationsService = NotificationsService();
-  await notificationsService.initialize();
+  // أولاً: تهيئة خدمة الإشعارات
+  await Get.putAsync(() => NotificationsService().init());
+  
+  // ثانياً: تهيئة قاعدة البيانات
+  await Get.putAsync(() => DatabaseService().init());
 
   runApp(MyApp());
 }
@@ -21,13 +22,10 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
+    return GetMaterialApp(
       title: 'الصيدلية البيطرية',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'BahijTheSansArabic',
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       locale: const Locale('ar', 'EG'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -37,7 +35,18 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('ar', 'EG'),
       ],
-      home: HomeScreen(),
+      initialRoute: AppPages.INITIAL,
+      getPages: AppPages.routes,
+      initialBinding: BindingsBuilder(() {
+        Get.put(DatabaseService());
+        // ... أي services أخرى
+      }),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child!,
+        );
+      },
     );
   }
 }
