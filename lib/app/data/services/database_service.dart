@@ -19,10 +19,13 @@ class DatabaseService extends GetxService {
   // Using RxInterface instead of Streams
   final medicinesUpdate = false.obs;
   final salesUpdate = false.obs;
+  final suppliersUpdate = false.obs;
 
   // Notify methods
   void notifyMedicineUpdate() => medicinesUpdate.toggle();
   void notifySalesUpdate() => salesUpdate.toggle();
+  void notifySupplierUpdate() => suppliersUpdate.toggle();
+
 
   Future<List<Medicine>> getExpiringMedicines(int days) async {
     final db = await database;
@@ -292,15 +295,12 @@ CREATE TABLE IF NOT EXISTS suppliers(
   Future<int> insertSupplier(Supplier supplier) async {
     try {
       final db = await database;
-      final Map<String, dynamic> supplierMap = supplier.toMap();
-      // Remove the id field as it's auto-generated
-      supplierMap.remove('id');
-
       final id = await db.insert(
         'suppliers',
-        supplierMap,
+        supplier.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+      notifySupplierUpdate(); // Notify listeners
       return id;
     } catch (e) {
       print('Error inserting supplier: $e');
@@ -358,6 +358,8 @@ CREATE TABLE IF NOT EXISTS suppliers(
       throw Exception('فشل في تحميل بيانات المندوب');
     }
   }
+
+
 
   Future<List<Medicine>> getMedicinesBySupplier(int supplierId) async {
     final db = await database;

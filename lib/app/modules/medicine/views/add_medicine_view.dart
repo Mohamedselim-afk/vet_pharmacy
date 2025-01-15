@@ -399,7 +399,7 @@ class AddMedicineView extends GetView<MedicineController> {
     return true;
   }
 
-   Widget _buildSupplierField() {
+    Widget _buildSupplierField() {
     return Obx(() {
       if (controller.suppliers.isEmpty) {
         return ListTile(
@@ -408,12 +408,7 @@ class AddMedicineView extends GetView<MedicineController> {
             style: TextStyle(color: Colors.red),
           ),
           leading: Icon(Icons.warning, color: Colors.red),
-          onTap: () async {
-            final result = await Get.toNamed(Routes.SUPPLIERS);
-            if (result == true) {
-              controller.loadSuppliers();
-            }
-          },
+          onTap: () => _showAddSupplierDialog(),
         );
       }
 
@@ -425,12 +420,7 @@ class AddMedicineView extends GetView<MedicineController> {
           prefixIcon: Icon(Icons.person),
           suffixIcon: IconButton(
             icon: Icon(Icons.add),
-            onPressed: () async {
-              final result = await Get.toNamed(Routes.SUPPLIERS);
-              if (result == true) {
-                controller.loadSuppliers();
-              }
-            },
+            onPressed: () => _showAddSupplierDialog(),
           ),
         ),
         items: controller.suppliers.map((supplier) {
@@ -450,5 +440,71 @@ class AddMedicineView extends GetView<MedicineController> {
         },
       );
     });
+  }
+
+   void _showAddSupplierDialog() {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final addressController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('إضافة مندوب جديد'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'اسم المندوب',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: InputDecoration(
+                  labelText: 'رقم الهاتف',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: addressController,
+                decoration: InputDecoration(
+                  labelText: 'العنوان',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('إلغاء'),
+            onPressed: () => Get.back(),
+          ),
+          ElevatedButton(
+            child: Text('إضافة'),
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                final id = await controller.addNewSupplier(
+                  nameController.text,
+                  phoneController.text,
+                  addressController.text,
+                );
+                
+                if (id != null) {
+                  Get.back();
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

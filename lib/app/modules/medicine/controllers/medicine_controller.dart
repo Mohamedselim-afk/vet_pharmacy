@@ -30,13 +30,12 @@ class MedicineController extends GetxController {
   final suppliers = <Supplier>[].obs;
   final selectedSupplierId = RxnInt();
 
-  @override
+   @override
   void onInit() {
     super.onInit();
-    // Load suppliers immediately when controller initializes
     loadSuppliers();
-    // Listen to any changes in the database
-    ever(_databaseService.medicinesUpdate, (_) => loadSuppliers());
+    // Listen to supplier updates
+    ever(_databaseService.suppliersUpdate, (_) => loadSuppliers());
   }
 
    // تهيئة البيانات للتعديل
@@ -98,11 +97,10 @@ class MedicineController extends GetxController {
 
 
   // تحميل قائمة المناديب
-  Future<void> loadSuppliers() async {
+   Future<void> loadSuppliers() async {
     try {
       final loadedSuppliers = await _databaseService.getAllSuppliers();
       suppliers.value = loadedSuppliers;
-      
       // If we have suppliers but none selected, select the first one
       if (suppliers.isNotEmpty && selectedSupplierId.value == null) {
         selectedSupplierId.value = suppliers.first.id;
@@ -117,7 +115,8 @@ class MedicineController extends GetxController {
     }
   }
 
-  Future<void> addNewSupplier(String name, String? phone, String? address) async {
+
+  Future<int?> addNewSupplier(String name, String phone, String address) async {
     try {
       final supplier = Supplier(
         name: name,
@@ -134,13 +133,15 @@ class MedicineController extends GetxController {
         'تم إضافة المندوب بنجاح',
         snackPosition: SnackPosition.BOTTOM,
       );
+      
+      return id;
     } catch (e) {
-      print('Error adding supplier: $e');
       Get.snackbar(
         'خطأ',
         'حدث خطأ في إضافة المندوب',
         snackPosition: SnackPosition.BOTTOM,
       );
+      return null;
     }
   }
 
