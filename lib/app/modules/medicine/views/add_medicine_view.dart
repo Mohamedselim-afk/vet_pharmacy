@@ -23,8 +23,8 @@ class AddMedicineView extends GetView<MedicineController> {
           padding: EdgeInsets.all(16),
           children: [
             // اختيار المندوب
-            _buildSupplierField(), // Updated
-            _buildSupplierDropdown(),
+            _buildSupplierField(), 
+            // _buildSupplierDropdown(),
             SizedBox(height: 16),
 
             // معلومات الدواء الأساسية
@@ -51,25 +51,25 @@ class AddMedicineView extends GetView<MedicineController> {
     );
   }
 
-  Widget _buildSupplierDropdown() {
-    return Obx(() => DropdownButtonFormField<int>(
-          value: controller.selectedSupplierId.value,
-          decoration: InputDecoration(
-            labelText: 'المندوب',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.person),
-          ),
-          items: controller.suppliers
-              .map((supplier) => DropdownMenuItem(
-                    value: supplier.id,
-                    child: Text(supplier.name),
-                  ))
-              .toList(),
-          onChanged: (value) => controller.selectedSupplierId.value = value!,
-          validator: (value) =>
-              value == null ? 'يرجى اختيار المندوب' : null,
-        ));
-  }
+  // Widget _buildSupplierDropdown() {
+  //   return Obx(() => DropdownButtonFormField<int>(
+  //         value: controller.selectedSupplierId.value,
+  //         decoration: InputDecoration(
+  //           labelText: 'المندوب',
+  //           border: OutlineInputBorder(),
+  //           prefixIcon: Icon(Icons.person),
+  //         ),
+  //         items: controller.suppliers
+  //             .map((supplier) => DropdownMenuItem(
+  //                   value: supplier.id,
+  //                   child: Text(supplier.name),
+  //                 ))
+  //             .toList(),
+  //         onChanged: (value) => controller.selectedSupplierId.value = value!,
+  //         validator: (value) =>
+  //             value == null ? 'يرجى اختيار المندوب' : null,
+  //       ));
+  // }
 
   Widget _buildBasicInfoSection() {
     return Column(

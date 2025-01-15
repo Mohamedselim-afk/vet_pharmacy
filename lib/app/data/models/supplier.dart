@@ -1,6 +1,3 @@
-// lib/app/data/models/supplier.dart
-import 'package:get/get.dart';
-
 class Supplier {
   final int? id;
   final String name;
@@ -18,21 +15,25 @@ class Supplier {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
-      'phone': phone,
-      'address': address,
-      'notes': notes,
+      'phone': phone ?? '',
+      'address': address ?? '',
+      'notes': notes ?? '',
     };
   }
 
   static Supplier fromMap(Map<String, dynamic> map) {
     return Supplier(
       id: map['id'],
-      name: map['name'],
-      phone: map['phone'],
-      address: map['address'],
-      notes: map['notes'],
+      name: map['name'] ?? '',
+      phone: map['phone'] ?? '',
+      address: map['address'] ?? '',
+      notes: map['notes'] ?? '',
     );
+  }
+
+  @override
+  String toString() {
+    return 'Supplier(id: $id, name: $name, phone: $phone, address: $address)';
   }
 }

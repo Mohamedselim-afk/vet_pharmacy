@@ -8,26 +8,62 @@ class HomeView extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: controller.onRefresh,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Theme.of(context).primaryColor, Colors.grey[100]!],
-              stops: [0.0, 0.3],
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: false,
+              flexibleSpace: const FlexibleSpaceBar(
+                title: const Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'صيدلية أحمد فخر البيطرية',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Divider(
+                      color: Colors.white,
+                      thickness: 1,
+                      indent: 80,
+                      endIndent: 80,
+                    ),
+                  ],
+                ),
+                centerTitle: true,
+              ),
+              backgroundColor: Get.theme.primaryColor,
             ),
-          ),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildStatisticsSection(),
-              const SizedBox(height: 30),
-              _buildMenuGrid(),
-            ],
-          ),
+
+            // المحتوى
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Theme.of(context).primaryColor, Colors.grey[100]!],
+                    stops: [0.0, 0.3],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildStatisticsSection(),
+                      _buildMenuGrid(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -35,7 +71,7 @@ class HomeView extends GetView<HomeController> {
 
   PreferredSize _buildAppBar() {
     return PreferredSize(
-      preferredSize: Size.fromHeight(80),
+      preferredSize: const Size.fromHeight(80),
       child: AppBar(
         backgroundColor: Get.theme.primaryColor,
         title: const Center(
@@ -104,11 +140,11 @@ class HomeView extends GetView<HomeController> {
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -144,7 +180,7 @@ class HomeView extends GetView<HomeController> {
   Widget _buildMenuGrid() {
     return GridView.count(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
@@ -174,11 +210,11 @@ class HomeView extends GetView<HomeController> {
           onTap: () => Get.toNamed(Routes.REPORTS),
         ),
         _buildMenuCard(
-            title: 'المناديب',
-            icon: Icons.people,
-            color: Colors.green,
-            onTap: () => Get.toNamed(Routes.SUPPLIERS),
-          ),
+          title: 'المناديب',
+          icon: Icons.people,
+          color: Colors.green,
+          onTap: () => Get.toNamed(Routes.SUPPLIERS),
+        ),
       ],
     );
   }
@@ -210,7 +246,7 @@ class HomeView extends GetView<HomeController> {
                 color: color.withOpacity(0.3),
                 spreadRadius: 1,
                 blurRadius: 8,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -218,7 +254,7 @@ class HomeView extends GetView<HomeController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,

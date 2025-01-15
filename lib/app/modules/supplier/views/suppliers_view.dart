@@ -13,38 +13,46 @@ class SuppliersView extends GetView<SupplierController> {
         centerTitle: true,
       ),
       body: Obx(() => ListView.builder(
-        itemCount: controller.suppliers.length,
-        itemBuilder: (context, index) {
-          final supplier = controller.suppliers[index];
-          return Card(
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(supplier.name),
-              subtitle: supplier.phone != null ? Text(supplier.phone!) : null,
-              trailing: FutureBuilder<Map<String, dynamic>>(
-                future: controller.getSupplierSummary(supplier.id!),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
-                  
-                  final data = snapshot.data!;
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('الباقي: ${data['remaining_amount'].toStringAsFixed(2)} جنيه'),
-                      Text('عدد الأدوية: ${data['medicine_count']}'),
-                    ],
-                  );
-                },
-              ),
-              onTap: () => Get.toNamed(
-                '/supplier-details',
-                arguments: supplier,
-              ),
-            ),
-          );
-        },
-      )),
+            itemCount: controller.suppliers.length,
+            itemBuilder: (context, index) {
+              final supplier = controller.suppliers[index];
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(supplier.name),
+                  subtitle:
+                      supplier.phone != null ? Text(supplier.phone!) : null,
+                  trailing: FutureBuilder<Map<String, dynamic>>(
+                    future: controller.getSupplierSummary(supplier.id!),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return CircularProgressIndicator();
+                      }
+
+                      final data = snapshot.data!;
+                      // تحقق من القيم واستخدام قيم افتراضية في حالة null
+                      final remainingAmount = data['remaining_amount'] ?? 0.0;
+                      final medicineCount = data['medicine_count'] ?? 0;
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              'الباقي: ${(remainingAmount as num).toStringAsFixed(2)} جنيه'),
+                          Text('عدد الأدوية: $medicineCount'),
+                        ],
+                      );
+                    },
+                  ),
+                  onTap: () => Get.toNamed(
+                    '/SUPPLIER_DETAILS',
+                    arguments: supplier,
+                  ),
+                ),
+              );
+            },
+          )),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () => _showAddSupplierDialog(context),
@@ -56,7 +64,7 @@ class SuppliersView extends GetView<SupplierController> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
-    
+
     Get.dialog(
       AlertDialog(
         title: Text('إضافة مندوب جديد'),
@@ -107,6 +115,12 @@ class SuppliersView extends GetView<SupplierController> {
                   address: addressController.text,
                 ));
                 Get.back();
+              } else {
+                Get.snackbar(
+                  'تنبيه',
+                  'يرجى إدخال اسم المندوب',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
               }
             },
           ),

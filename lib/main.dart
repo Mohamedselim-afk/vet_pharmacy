@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'app/routes/app_pages.dart';
 import 'app/data/services/database_service.dart';
 import 'app/data/services/notifications_service.dart';
@@ -10,11 +12,21 @@ import 'core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // أولاً: تهيئة خدمة الإشعارات
-  await Get.putAsync(() => NotificationsService().init());
-  
-  // ثانياً: تهيئة قاعدة البيانات
-  await Get.putAsync(() => DatabaseService().init());
+  try {
+    // حذف قاعدة البيانات القديمة (اختياري، فقط للتجربة)
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'pharmacy.db');
+    await deleteDatabase(path);
+    print('تم حذف قاعدة البيانات القديمة');
+
+    // تهيئة الخدمات
+    await Get.putAsync(() => NotificationsService().init());
+    await Get.putAsync(() => DatabaseService().init());
+    print('تم تهيئة الخدمات بنجاح');
+
+  } catch (e) {
+    print('خطأ في تهيئة التطبيق: $e');
+  }
 
   runApp(MyApp());
 }

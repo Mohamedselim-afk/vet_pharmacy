@@ -16,7 +16,7 @@ class DatabaseService extends GetxService {
       Get.find<NotificationsService>();
   Database? _database;
 
-  // Using RxInterface instead of Streams
+  // Using RxInterface for updates
   final medicinesUpdate = false.obs;
   final salesUpdate = false.obs;
   final suppliersUpdate = false.obs;
@@ -25,7 +25,6 @@ class DatabaseService extends GetxService {
   void notifyMedicineUpdate() => medicinesUpdate.toggle();
   void notifySalesUpdate() => salesUpdate.toggle();
   void notifySupplierUpdate() => suppliersUpdate.toggle();
-
 
   Future<List<Medicine>> getExpiringMedicines(int days) async {
     final db = await database;
@@ -89,8 +88,14 @@ class DatabaseService extends GetxService {
   }
 
   Future<void> initializeDatabase() async {
-    if (_database != null) return;
-    _database = await _initDB('pharmacy.db');
+    try {
+      if (_database != null) return;
+      _database = await _initDB('pharmacy.db');
+      print('تم تهيئة قاعدة البيانات بنجاح');
+    } catch (e) {
+      print('خطأ في تهيئة قاعدة البيانات: $e');
+      rethrow;
+    }
   }
 
   Future<Database> get database async {
@@ -200,144 +205,157 @@ class DatabaseService extends GetxService {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    // 1. إنشاء جدول المناديب أولاً
-    await db.execute('''
-    CREATE TABLE suppliers(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT,
-      address TEXT,
-      notes TEXT
-    )
+    try {
+      // إضافة IF NOT EXISTS لمنع الخطأ عند وجود الجدول
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS suppliers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        notes TEXT
+      )
+    ''');
+      print('تم تجهيز جدول المناديب');
+
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS customers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT,
+        address TEXT
+      )
     ''');
 
-    // 2. إنشاء جدول العملاء
-    await db.execute('''
-    CREATE TABLE customers(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT,
-      address TEXT
-    )
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS medicines(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        barcode TEXT,
+        quantity INTEGER NOT NULL,
+        market_price REAL NOT NULL,
+        selling_price REAL NOT NULL,
+        purchase_price REAL NOT NULL,
+        box_quantity INTEGER NOT NULL,
+        box_price REAL NOT NULL,
+        total_quantity INTEGER NOT NULL,
+        amount_paid REAL NOT NULL,
+        supplier_id INTEGER NOT NULL,
+        image TEXT,
+        expiry_date TEXT,
+        FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
+      )
     ''');
 
-    // 3. إنشاء جدول الأدوية مرة واحدة فقط مع كل الحقول المطلوبة
-    await db.execute('''
-    CREATE TABLE medicines(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      barcode TEXT,
-      quantity INTEGER NOT NULL,
-      market_price REAL NOT NULL,
-      selling_price REAL NOT NULL,
-      purchase_price REAL NOT NULL,
-      box_quantity INTEGER NOT NULL,
-      box_price REAL NOT NULL,
-      total_quantity INTEGER NOT NULL,
-      amount_paid REAL NOT NULL,
-      supplier_id INTEGER NOT NULL,
-      image TEXT,
-      expiry_date TEXT,
-      FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
-    )
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS sales(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        total REAL NOT NULL,
+        FOREIGN KEY (customer_id) REFERENCES customers (id)
+      )
     ''');
 
-    // 4. إنشاء جدول المبيعات
-    await db.execute('''
-    CREATE TABLE sales(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      total REAL NOT NULL,
-      FOREIGN KEY (customer_id) REFERENCES customers (id)
-    )
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS sale_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id INTEGER NOT NULL,
+        medicine_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL,
+        FOREIGN KEY (sale_id) REFERENCES sales (id),
+        FOREIGN KEY (medicine_id) REFERENCES medicines (id)
+      )
     ''');
 
-    // 5. إنشاء جدول عناصر المبيعات
-    await db.execute('''
-    CREATE TABLE sale_items(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sale_id INTEGER NOT NULL,
-      medicine_id INTEGER NOT NULL,
-      quantity INTEGER NOT NULL,
-      price REAL NOT NULL,
-      FOREIGN KEY (sale_id) REFERENCES sales (id),
-      FOREIGN KEY (medicine_id) REFERENCES medicines (id)
-    )
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS medicine_payments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        medicine_id INTEGER NOT NULL,
+        supplier_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        payment_date TEXT NOT NULL,
+        notes TEXT,
+        FOREIGN KEY (medicine_id) REFERENCES medicines (id),
+        FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
+      )
     ''');
 
-    // 6. إنشاء جدول مدفوعات الأدوية
-    await db.execute('''
-    CREATE TABLE medicine_payments(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      medicine_id INTEGER NOT NULL,
-      supplier_id INTEGER NOT NULL,
-      amount REAL NOT NULL,
-      payment_date TEXT NOT NULL,
-      notes TEXT,
-      FOREIGN KEY (medicine_id) REFERENCES medicines (id),
-      FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
-    )
-    ''');
-
-    await db.execute('''
-CREATE TABLE IF NOT EXISTS suppliers(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  phone TEXT,
-  address TEXT,
-  notes TEXT
-)
-''');
-    print('Suppliers table created successfully');
+      print('تم إنشاء جميع الجداول بنجاح');
+    } catch (e) {
+      print('خطأ في إنشاء قاعدة البيانات: $e');
+      rethrow;
+    }
   }
 
+  // Supplier Methods
   Future<int> insertSupplier(Supplier supplier) async {
     try {
       final db = await database;
-      final id = await db.insert(
-        'suppliers',
-        supplier.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      notifySupplierUpdate(); // Notify listeners
+
+      // تجهيز البيانات
+      final data = {
+        'name': supplier.name,
+        'phone': supplier.phone ?? '',
+        'address': supplier.address ?? '',
+        'notes': supplier.notes ?? '',
+      };
+
+      print('Inserting supplier data: $data');
+
+      // محاولة الإدخال
+      final id = await db.rawInsert('''
+      INSERT INTO suppliers (name, phone, address, notes)
+      VALUES (?, ?, ?, ?)
+    ''', [data['name'], data['phone'], data['address'], data['notes']]);
+
+      print('Inserted supplier with id: $id');
+      notifySupplierUpdate();
       return id;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error inserting supplier: $e');
-      throw Exception('فشل في إضافة المندوب');
+      print('Stack trace: $stackTrace');
+      throw Exception('فشل في إضافة المندوب: $e');
     }
   }
 
   Future<List<Supplier>> getAllSuppliers() async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> maps = await db.query(
-        'suppliers',
-        orderBy: 'name ASC',
-      );
 
-      // Add error checking for empty or invalid data
+      // نستخدم rawQuery بدل query للتحكم الكامل في الاستعلام
+      final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT id, name, phone, address, notes 
+      FROM suppliers 
+      ORDER BY name ASC
+    ''');
+
+      print('Raw query result: $maps'); // للتشخيص
+
       if (maps.isEmpty) {
+        print('No suppliers found in database');
         return [];
       }
 
-      return List.generate(maps.length, (i) {
-        try {
-          return Supplier.fromMap(maps[i]);
-        } catch (e) {
-          print('Error parsing supplier data: $e');
-          // Return a dummy supplier if data is corrupt
-          return Supplier(
-            id: -1,
-            name: 'بيانات تالفة',
-            phone: '',
-            address: '',
-          );
-        }
-      }).where((supplier) => supplier.id != -1).toList();
-    } catch (e) {
-      print('Error getting suppliers: $e');
-      throw Exception('فشل في تحميل قائمة المناديب');
+      final suppliers = maps.map((map) {
+        final supplier = Supplier(
+          id: map['id'] as int,
+          name: map['name'] as String,
+          phone: map['phone'] as String?,
+          address: map['address'] as String?,
+          notes: map['notes'] as String?,
+        );
+        print('Created supplier: $supplier'); // للتشخيص
+        return supplier;
+      }).toList();
+
+      print('Returning ${suppliers.length} suppliers');
+      return suppliers;
+    } catch (e, stackTrace) {
+      print('Error in getAllSuppliers: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('فشل في تحميل قائمة المناديب: $e');
     }
   }
 
@@ -359,8 +377,6 @@ CREATE TABLE IF NOT EXISTS suppliers(
     }
   }
 
-
-
   Future<List<Medicine>> getMedicinesBySupplier(int supplierId) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -374,30 +390,44 @@ CREATE TABLE IF NOT EXISTS suppliers(
   Future<Map<String, dynamic>> getSupplierSummary(int supplierId) async {
     final db = await database;
     final result = await db.rawQuery('''
-      SELECT 
-        SUM(total_quantity * purchase_price) as total_amount,
-        SUM(amount_paid) as total_paid,
-        SUM(total_quantity * purchase_price - amount_paid) as remaining_amount,
-        COUNT(DISTINCT id) as medicine_count
-      FROM medicines
-      WHERE supplier_id = ?
-    ''', [supplierId]);
+    SELECT 
+      COALESCE(SUM(total_quantity * purchase_price), 0.0) as total_amount,
+      COALESCE(SUM(amount_paid), 0.0) as total_paid,
+      COALESCE(SUM(total_quantity * purchase_price - amount_paid), 0.0) as remaining_amount,
+      COUNT(DISTINCT id) as medicine_count
+    FROM medicines
+    WHERE supplier_id = ?
+  ''', [supplierId]);
 
-    return result.first;
+    if (result.isEmpty) {
+      return {
+        'total_amount': 0.0,
+        'total_paid': 0.0,
+        'remaining_amount': 0.0,
+        'medicine_count': 0
+      };
+    }
+
+    return {
+      'total_amount': result.first['total_amount'] ?? 0.0,
+      'total_paid': result.first['total_paid'] ?? 0.0,
+      'remaining_amount': result.first['remaining_amount'] ?? 0.0,
+      'medicine_count': result.first['medicine_count'] ?? 0
+    };
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('''
-      CREATE TABLE customers(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT,
-        address TEXT
-      )
+        CREATE TABLE IF NOT EXISTS suppliers(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          phone TEXT,
+          address TEXT,
+          notes TEXT
+        )
       ''');
-      await db.execute(
-          'ALTER TABLE sales ADD COLUMN customer_id INTEGER REFERENCES customers(id)');
+      print('تحديث قاعدة البيانات من الإصدار $oldVersion إلى $newVersion');
     }
   }
 
