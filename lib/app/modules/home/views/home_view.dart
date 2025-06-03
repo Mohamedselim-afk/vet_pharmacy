@@ -21,7 +21,7 @@ class HomeView extends GetView<HomeController> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'صيدلية أحمد فخر البيطرية',
+                      'الصيدلية البيطرية',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -79,7 +79,7 @@ class HomeView extends GetView<HomeController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'صيدلية أحمد فخر البيطرية',
+                'الصيدلية البيطرية',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
